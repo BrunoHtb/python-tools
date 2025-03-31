@@ -86,7 +86,7 @@ def extrair_detalhes():
                     slug = caminho.split("/")[2]  # /imovel/<slug>/id-xxxxx
                     tipo = slug.split("-")[0]
                     if tipo == 'sala':
-                        tipo = slug.split("-")[0], '-', slug.split("-")[1]
+                        tipo = f'{slug.split("-")[0]}-{slug.split("-")[1]}'
                 except:
                     tipo = "-"
 

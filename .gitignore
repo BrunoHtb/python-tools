@@ -1,1 +1,6 @@
 scrapping
+scraping
+__pycache__
+data/backup/
+*.csv
+sites/__pycache__/chaves_na_mao.cpython-312.pyc
