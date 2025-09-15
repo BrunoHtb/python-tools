@@ -39,7 +39,6 @@ def _cubic(p0, p1, p2, p3, t):
     )
 
 def sample_bezier(knots, steps=12, closed=True):
-    """knots: lista de dicts com keys 'in', 'anchor', 'out' em pixels."""
     if not knots:
         return []
 
@@ -74,7 +73,7 @@ def extract_paths(psb_path, sample_curves=True, steps=12):
 
         if "fx" not in name.lower():
             continue
-        
+
         i = 0
         current_knots = []
         closed = None
@@ -166,13 +165,13 @@ if __name__ == "__main__":
         tfw_file = os.path.join(input_dir, base_name + '.tfw')
 
         if not os.path.exists(tfw_file):
-            print(f"⚠️  Arquivo .tfw correspondente não encontrado para {file_name}, pulando...")
+            print(f"Arquivo .tfw correspondente não encontrado para {file_name}, pulando...")
             continue
 
         print(f"Processando {psb_file}")
 
         paths, psd = extract_paths(psb_file, sample_curves=True, steps=16)
-        print(f"  {len(paths)} paths encontrados.")
+        print(f"{len(paths)} paths encontrados.")
 
         export_to_shp(
             paths,
