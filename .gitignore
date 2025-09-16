@@ -2,3 +2,4 @@ build/
 dist/
 imagens/
 main.spec
+*.rar

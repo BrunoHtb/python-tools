@@ -122,7 +122,7 @@ def extract_paths(psb_path, sample_curves=True, steps=12):
 
     return results, psd
 
-def export_to_shp(paths, tfw_path, epsg="EPSG:31983", gpkg_out="saida_tudo.shp"):
+def export_to_shp(paths, tfw_path, epsg="EPSG:31982", gpkg_out="saida_tudo.shp"):
     a, d, b, e, c, f_ = read_world_file(tfw_path)
     schema = {"geometry": "Unknown", "properties": {"tipo": "str"}}
 
@@ -150,11 +150,18 @@ if __name__ == "__main__":
     config.read("config.ini", encoding="utf-8")
     input_dir = config.get("paths", "input_dir", fallback="./imagens/")
     output_dir = config.get("paths", "output_dir", fallback="./shapefiles/")
+    utm_zone = config.getint("paths", "utm_zone", fallback=23)
 
     if not os.path.isdir(input_dir):
         print(f"Caminho de entrada inválido no config.ini: {input_dir}")
         exit(1)
     os.makedirs(output_dir, exist_ok=True)
+
+    if 18 <= utm_zone <= 27:
+        epsg_code = f"EPSG:{31960 + utm_zone}"
+    else:
+        print(f"Zona UTM inválida: {utm_zone}. Usando padrão 23S.")
+        epsg_code = "EPSG:31982"
 
     for file_name in os.listdir(input_dir):
         if not file_name.lower().endswith('.psb'):
@@ -176,7 +183,7 @@ if __name__ == "__main__":
         export_to_shp(
             paths,
             tfw_file,
-            epsg="EPSG:31983",
+            epsg=epsg_code,
             gpkg_out=os.path.join(output_dir, f"{base_name}_vetor.gpkg")
         )
         del psd
