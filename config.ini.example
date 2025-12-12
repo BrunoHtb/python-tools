@@ -1,0 +1,13 @@
+[FILESYSTEM]
+root = E:\
+entregas_dir = 8 - Entregas
+
+[POSTGRES]
+host = localhost
+database = paranamap
+user = postgres
+password = SUA_SENHA_AQUI
+port = 5432
+
+[EXECUTION]
+batch_size = 1000

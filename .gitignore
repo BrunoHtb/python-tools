@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+
+# Virtual environment
+venv/
+.env/
+.env.*
+
+# Configurações locais
+config.ini
+
+# Logs
+*.log
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+
+# OS
+desktop.ini
