@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env / secrets
+.env
+config.ini
+*.env
+
+# CSV / TXT gerados
+*.csv
+*.txt
+
+# Logs / temp
+*.log
+temp/
+output/
+final/
+
+# Build
+build/
+dist/

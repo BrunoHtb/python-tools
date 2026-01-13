@@ -1,5 +1,11 @@
+# PyInstaller
+*.spec
 build/
 dist/
-imagens/
-main.spec
-*.rar
+
+# GIS outputs
+*.gpkg
+*.shp
+*.dbf
+*.prj
+*.cpg
