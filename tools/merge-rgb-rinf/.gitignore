@@ -1,0 +1,4 @@
+*.vrt
+build/
+dist/
+git rm -r --cached build dist

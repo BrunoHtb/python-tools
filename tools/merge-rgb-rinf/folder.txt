@@ -1,0 +1,2 @@
+D:\Ortofoto_teste_RGBN\Fortaleza_Bairro
+C:\Program Files\QGIS 3.32.0\OSGeo4W.bat
