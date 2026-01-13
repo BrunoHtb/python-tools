@@ -1,0 +1,3 @@
+psycopg2
+configparser
+wmi; platform_system == "Windows"
