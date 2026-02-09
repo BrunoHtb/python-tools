@@ -1,5 +1,9 @@
 [FILESYSTEM]
-root = E:\
+root = 
+    E:\
+    F:\
+    D:\
+    H:\
 entregas_dir = 8 - Entregas
 
 [POSTGRES]

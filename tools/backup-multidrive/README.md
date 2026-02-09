@@ -1,4 +1,4 @@
-# ParanamaP Backup Catalog
+# MultiDrive Indexer
 
 Utility that catalogs a structured filesystem (deliveries) into PostgreSQL, including disk label/serial metadata, file paths and last-modified timestamps.
 
