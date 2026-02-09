@@ -67,139 +67,149 @@ def strip_drive(path):
     return rest.replace("\\", "/")
 
 
-# Ler config.ini
-config = configparser.ConfigParser()
-config.read("config.ini", encoding="utf-8")
+def run_cataloger():
+    # Ler config.ini
+    config = configparser.ConfigParser()
+    config.read("config.ini", encoding="utf-8")
 
-raw_roots = config["FILESYSTEM"]["root"]
-roots = [r.strip() for r in raw_roots.split('\n') if r.strip()]
+    raw_roots = config["FILESYSTEM"]["root"]
+    roots = [r.strip() for r in raw_roots.split('\n') if r.strip()]
 
-ENTREGAS_DIR = config["FILESYSTEM"]["entregas_dir"]
+    ENTREGAS_DIR = config["FILESYSTEM"]["entregas_dir"]
 
-DB_CONFIG = {
-    "host": config["POSTGRES"]["host"],
-    "database": config["POSTGRES"]["database"],
-    "user": config["POSTGRES"]["user"],
-    "password": config["POSTGRES"]["password"],
-    "port": config["POSTGRES"].getint("port", 5432)
-}
+    DB_CONFIG = {
+        "host": config["POSTGRES"]["host"],
+        "database": config["POSTGRES"]["database"],
+        "user": config["POSTGRES"]["user"],
+        "password": config["POSTGRES"]["password"],
+        "port": config["POSTGRES"].getint("port", 5432)
+    }
 
-batch_size = config["EXECUTION"].getint("batch_size", 1000)
+    batch_size = config["EXECUTION"].getint("batch_size", 1000)
 
-conn = psycopg2.connect(**DB_CONFIG)
-cur = conn.cursor()
+    conn = psycopg2.connect(**DB_CONFIG)
+    cur = conn.cursor()
 
-batch = []
+    batch = []
 
-# Percorre todos os HDs
-for current_root in roots:
-    print(f"\n--- Iniciando processamento de: {current_root} ---")
-    
-    if not os.path.exists(current_root):
-        print(f"❌ Caminho não encontrado: {current_root}. Pulando...")
-        continue
-
-    hd_label, hd_serial = normalize_hd_metadata(current_root)
-    print(f"   HD Label : {hd_label}")
-    print(f"   HD Serial: {hd_serial}")
-    path_entregas = os.path.join(current_root, ENTREGAS_DIR)
-
-    if not os.path.exists(path_entregas):
-        print(f"⚠️ Pasta de entregas não encontrada neste HD: {path_entregas}")
-        continue
-
-    # Percorre todos os subdiretorios
-    for remessa in os.listdir(path_entregas):
-        path_remessa = os.path.join(path_entregas, remessa)
-        if not os.path.isdir(path_remessa):
+    # Percorre todos os HDs
+    for current_root in roots:
+        print(f"\n--- Iniciando processamento de: {current_root} ---")
+        
+        if not os.path.exists(current_root):
+            print(f"❌ Caminho não encontrado: {current_root}. Pulando...")
             continue
 
-        for empresa in os.listdir(path_remessa):
-            path_empresa = os.path.join(path_remessa, empresa)
-            if not os.path.isdir(path_empresa):
+        hd_label, hd_serial = normalize_hd_metadata(current_root)
+        print(f"   HD Label : {hd_label}")
+        print(f"   HD Serial: {hd_serial}")
+        path_entregas = os.path.join(current_root, ENTREGAS_DIR)
+
+        if not os.path.exists(path_entregas):
+            print(f"⚠️ Pasta de entregas não encontrada neste HD: {path_entregas}")
+            continue
+
+        # Percorre todos os subdiretorios
+        for remessa in os.listdir(path_entregas):
+            path_remessa = os.path.join(path_entregas, remessa)
+            if not os.path.isdir(path_remessa):
                 continue
 
-            for servico in os.listdir(path_empresa):
-                path_servico = os.path.join(path_empresa, servico)
-                if not os.path.isdir(path_servico):
+            for empresa in os.listdir(path_remessa):
+                path_empresa = os.path.join(path_remessa, empresa)
+                if not os.path.isdir(path_empresa):
                     continue
 
-                for lote in os.listdir(path_servico):
-                    path_lote = os.path.join(path_servico, lote)
-                    if not os.path.isdir(path_lote):
+                for servico in os.listdir(path_empresa):
+                    path_servico = os.path.join(path_empresa, servico)
+                    if not os.path.isdir(path_servico):
                         continue
 
-                    for bloco in os.listdir(path_lote):
-                        path_bloco = os.path.join(path_lote, bloco)
-                        if not os.path.isdir(path_bloco):
+                    for lote in os.listdir(path_servico):
+                        path_lote = os.path.join(path_servico, lote)
+                        if not os.path.isdir(path_lote):
                             continue
 
-                        # Varredura recursiva a partir do BLOCO
-                        for root_dir, _, files in os.walk(path_bloco):
-                            for file_name in files:
-                                full_file_path = os.path.join(root_dir, file_name)
-                                try:
-                                    stat = os.stat(full_file_path)
-                                    mtime = datetime.fromtimestamp(stat.st_mtime)
-                                except FileNotFoundError:
-                                    continue
+                        for bloco in os.listdir(path_lote):
+                            path_bloco = os.path.join(path_lote, bloco)
+                            if not os.path.isdir(path_bloco):
+                                continue
 
-                                batch.append((
-                                    hd_label,
-                                    hd_serial,
-                                    remessa,
-                                    empresa,
-                                    servico,
-                                    lote,
-                                    bloco,
-                                    file_name,
-                                    strip_drive(os.path.dirname(full_file_path)),
-                                    mtime
-                                ))
+                            # Varredura recursiva a partir do BLOCO
+                            for root_dir, _, files in os.walk(path_bloco):
+                                for file_name in files:
+                                    full_file_path = os.path.join(root_dir, file_name)
+                                    try:
+                                        stat = os.stat(full_file_path)
+                                        mtime = datetime.fromtimestamp(stat.st_mtime)
+                                    except FileNotFoundError:
+                                        continue
 
-                                if len(batch) >= batch_size:
-                                    execute_batch(cur, """
-                                        INSERT INTO controle_backup_hds.entregas
-                                        (hd_label, hd_serial,
-                                         remessa, empresa, servico, lote, bloco,
-                                         file_name, file_path, modified)
-                                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-                                        ON CONFLICT (file_path, file_name)
-                                        DO UPDATE SET
-                                            modified = EXCLUDED.modified,
-                                            remessa  = EXCLUDED.remessa,
-                                            empresa  = EXCLUDED.empresa,
-                                            servico  = EXCLUDED.servico,
-                                            lote     = EXCLUDED.lote,
-                                            bloco    = EXCLUDED.bloco,
-                                            hd_label = EXCLUDED.hd_label,
-                                            hd_serial= EXCLUDED.hd_serial
-                                    """, batch)
-                                    conn.commit()
-                                    batch.clear()
-                                    print(f"   ...lote de {batch_size} inserido.")
+                                    batch.append((
+                                        hd_label,
+                                        hd_serial,
+                                        remessa,
+                                        empresa,
+                                        servico,
+                                        lote,
+                                        bloco,
+                                        file_name,
+                                        strip_drive(os.path.dirname(full_file_path)),
+                                        mtime
+                                    ))
 
-# Caso sobre alguns arquivos para inserir no final
-if batch:
-    execute_batch(cur, """
-        INSERT INTO controle_backup_hds.entregas
-        (hd_label, hd_serial,
-         remessa, empresa, servico, lote, bloco,
-         file_name, file_path, modified)
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-        ON CONFLICT (file_path, file_name)
-        DO UPDATE SET
-            modified = EXCLUDED.modified,
-            remessa  = EXCLUDED.remessa,
-            empresa  = EXCLUDED.empresa,
-            servico  = EXCLUDED.servico,
-            lote     = EXCLUDED.lote,
-            bloco    = EXCLUDED.bloco,
-            hd_label = EXCLUDED.hd_label,
-            hd_serial= EXCLUDED.hd_serial
-    """, batch)
-    conn.commit()
-    print(f"   ...lote final de {len(batch)} inserido.")
+                                    if len(batch) >= batch_size:
+                                        execute_batch(cur, """
+                                            INSERT INTO controle_backup_hds.entregas
+                                            (hd_label, hd_serial,
+                                            remessa, empresa, servico, lote, bloco,
+                                            file_name, file_path, modified)
+                                            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                                            ON CONFLICT (file_path, file_name)
+                                            DO UPDATE SET
+                                                modified = EXCLUDED.modified,
+                                                remessa  = EXCLUDED.remessa,
+                                                empresa  = EXCLUDED.empresa,
+                                                servico  = EXCLUDED.servico,
+                                                lote     = EXCLUDED.lote,
+                                                bloco    = EXCLUDED.bloco,
+                                                hd_label = EXCLUDED.hd_label,
+                                                hd_serial= EXCLUDED.hd_serial
+                                        """, batch)
+                                        conn.commit()
+                                        batch.clear()
+                                        print(f"   ...lote de {batch_size} inserido.")
 
-conn.close()
-print("✔ Catálogo de TODOS os HDs gerado com sucesso!")
+    # Caso sobre alguns arquivos para inserir no final
+    if batch:
+        execute_batch(cur, """
+            INSERT INTO controle_backup_hds.entregas
+            (hd_label, hd_serial,
+            remessa, empresa, servico, lote, bloco,
+            file_name, file_path, modified)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            ON CONFLICT (file_path, file_name)
+            DO UPDATE SET
+                modified = EXCLUDED.modified,
+                remessa  = EXCLUDED.remessa,
+                empresa  = EXCLUDED.empresa,
+                servico  = EXCLUDED.servico,
+                lote     = EXCLUDED.lote,
+                bloco    = EXCLUDED.bloco,
+                hd_label = EXCLUDED.hd_label,
+                hd_serial= EXCLUDED.hd_serial
+        """, batch)
+        conn.commit()
+        print(f"   ...lote final de {len(batch)} inserido.")
+
+    conn.close()
+    print("✔ Catálogo de TODOS os HDs gerado com sucesso!")
+
+
+if __name__ == "__main__":
+    try:
+        run_cataloger()
+    except KeyboardInterrupt:
+        print("\nProcesso interrompido pelo usuário.")
+    except Exception as e:
+        print(f"Erro crítico: {e}")
